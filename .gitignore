@@ -1,0 +1,21 @@
+# Секреты
+.env
+
+# Бинарные файлы сборки
+/bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Логи и профили
+*.log
+*.pprof
+
+# Файлы IDE
+.idea/
+.DS_Store
+
+# Конфигурационные файлы
+.golangci.yml
