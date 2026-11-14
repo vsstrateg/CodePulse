@@ -8,8 +8,6 @@ import (
 	"log/slog"
 )
 
-var ErrNotFound = errors.New("task not found")
-
 type TaskStorage struct {
 	db *sql.DB
 }
@@ -96,7 +94,7 @@ func (s *TaskStorage) FindTaskByID(ctx context.Context, id int) (*domain.TaskDet
 	var task domain.Task
 	if err := row.Scan(&task.ID, &task.Title, &task.Description, &task.TimeLimitMs, &task.MemoryLimitMb, &task.Points); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, ErrNotFound
+			return nil, domain.ErrNotFound
 		}
 		return nil, err
 	}

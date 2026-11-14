@@ -2,12 +2,18 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"codepulse/internal/config"
+	"codepulse/internal/handler"
+	"codepulse/internal/service"
 	"codepulse/internal/storage"
 
 	// Postgres driver
@@ -46,6 +52,42 @@ func run() error {
 	if err := storage.RunMigrations(db); err != nil {
 		return fmt.Errorf("database migration error: %w", err)
 	}
+
+	taskStorage := storage.NewTaskStorage(db)
+	taskService := service.NewTaskService(taskStorage)
+	taskHandler := handler.NewTaskHandler(taskService)
+
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("POST /api/v1/tasks", taskHandler.CreateTask)
+	mux.HandleFunc("GET /api/v1/tasks", taskHandler.GetTasks)
+	mux.HandleFunc("GET /api/v1/tasks/{id}", taskHandler.GetTaskByID)
+
+	srv := &http.Server{
+		Addr:    cfg.Port,
+		Handler: mux,
+	}
+
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			slog.Error("Server error", "error", err)
+		}
+	}()
+	slog.Info("Server started", "port", cfg.Port)
+
+	stopCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	<-stopCtx.Done()
+	slog.Info("Stop signal received, shutting down...")
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		slog.Error("Error while forcibly stopping the server", "error", err)
+	}
+	slog.Info("The server has been shut down successfully and gracefully")
 
 	return nil
 }
