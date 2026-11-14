@@ -94,7 +94,7 @@ func (s *TaskStorage) FindTaskByID(ctx context.Context, id int) (*domain.TaskDet
 	var task domain.Task
 	if err := row.Scan(&task.ID, &task.Title, &task.Description, &task.TimeLimitMs, &task.MemoryLimitMb, &task.Points); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, domain.ErrNotFound
+			return nil, domain.ErrTaskNotFound
 		}
 		return nil, err
 	}

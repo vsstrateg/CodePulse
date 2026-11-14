@@ -14,6 +14,10 @@ type Submission struct {
 	UpdatedAt     time.Time        `json:"updated_at"`
 }
 
+type SubmissionResponse struct {
+	SubmissionID string `json:"submission_id"`
+}
+
 type SubmissionStatus string
 
 const (

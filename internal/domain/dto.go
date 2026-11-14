@@ -1,9 +1,5 @@
 package domain
 
-import "errors"
-
-var ErrNotFound = errors.New("task not found")
-
 type CreateTestRequest struct {
 	Input          string `json:"input_data"`
 	ExpectedOutput string `json:"expected_output"`

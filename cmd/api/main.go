@@ -57,11 +57,18 @@ func run() error {
 	taskService := service.NewTaskService(taskStorage)
 	taskHandler := handler.NewTaskHandler(taskService)
 
+	subStorage := storage.NewSubmissionStorage(db)
+	subService := service.NewSubmissionService(subStorage, taskStorage)
+	subHandler := handler.NewSubmissionHandler(subService)
+
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("POST /api/v1/tasks", taskHandler.CreateTask)
 	mux.HandleFunc("GET /api/v1/tasks", taskHandler.GetTasks)
 	mux.HandleFunc("GET /api/v1/tasks/{id}", taskHandler.GetTaskByID)
+
+	mux.HandleFunc("POST /api/v1/submissions", subHandler.CreateSubmission)
+	mux.HandleFunc("GET /api/v1/submissions/{id}", subHandler.GetSubmissionByID)
 
 	srv := &http.Server{
 		Addr:    cfg.Port,

@@ -44,14 +44,13 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 		slog.Warn("the client terminated the connection", "error", err)
 		return
 	}
-
 }
 
 func (h *TaskHandler) GetTasks(w http.ResponseWriter, r *http.Request) {
 
 	tasks, err := h.service.GetTasks(r.Context())
 	if err != nil {
-		if errors.Is(err, domain.ErrNotFound) {
+		if errors.Is(err, domain.ErrTaskNotFound) {
 			sendError(w, http.StatusNotFound, "task not found")
 			return
 		}
@@ -80,7 +79,7 @@ func (h *TaskHandler) GetTaskByID(w http.ResponseWriter, r *http.Request) {
 
 	task, err := h.service.GetTaskByID(r.Context(), id)
 	if err != nil {
-		if errors.Is(err, domain.ErrNotFound) {
+		if errors.Is(err, domain.ErrTaskNotFound) {
 			sendError(w, http.StatusNotFound, "task not found")
 			return
 		}
