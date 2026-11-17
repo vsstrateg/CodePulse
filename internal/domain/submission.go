@@ -20,6 +20,12 @@ type SubmissionResponse struct {
 
 type SubmissionStatus string
 
+type ExecutionResult struct {
+	Verdict       SubmissionStatus
+	ExecutionTime int
+	ErrorMessage  string
+}
+
 const (
 	StatusPending             SubmissionStatus = "PENDING"
 	StatusRunning             SubmissionStatus = "RUNNING"

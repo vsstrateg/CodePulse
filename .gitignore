@@ -1,7 +1,7 @@
-# Секреты
+# Secret
 .env
 
-# Бинарные файлы сборки
+# Build binary files
 /bin/
 *.exe
 *.exe~
@@ -9,13 +9,15 @@
 *.so
 *.dylib
 
-# Логи и профили
+# Logs and pprof
 *.log
 *.pprof
 
-# Файлы IDE
+# Files IDE
 .idea/
 .DS_Store
 
-# Конфигурационные файлы
+# Config files
 .golangci.yml
+
+SOW.docx
