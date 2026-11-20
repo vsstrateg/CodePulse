@@ -8,8 +8,10 @@ import (
 )
 
 type Config struct {
-	Port  string
-	DBDSN string
+	Port                  string
+	DBDSN                 string
+	KafkaBrokers          string
+	KafkaTopicSubmissions string
 }
 
 // LoadConfig loads configuration from environment variables or .env file
@@ -18,8 +20,10 @@ func LoadConfig() *Config {
 		slog.Warn(".env file not found, reading system variables")
 	}
 	return &Config{
-		Port:  getEnv("SERVER_PORT", ":8080"),
-		DBDSN: getEnv("DB_DSN", ""),
+		Port:                  getEnv("SERVER_PORT", ":8080"),
+		DBDSN:                 getEnv("DB_DSN", ""),
+		KafkaBrokers:          getEnv("KAFKA_BROKERS", "localhost:9092"),
+		KafkaTopicSubmissions: getEnv("KAFKA_TOPIC_SUBMISSIONS", "submissions.pending"),
 	}
 }
 

@@ -11,15 +11,21 @@ type SubmissionRepository interface {
 	FindSubmissionByID(ctx context.Context, id string) (*domain.Submission, error)
 }
 
+type SubmissionQueue interface {
+	Publish(ctx context.Context, event domain.SubmissionEvent) error
+}
+
 type SubmissionService struct {
 	storage  SubmissionRepository
 	taskRepo TaskRepository
+	queue    SubmissionQueue
 }
 
-func NewSubmissionService(storage SubmissionRepository, taskRepo TaskRepository) *SubmissionService {
+func NewSubmissionService(storage SubmissionRepository, taskRepo TaskRepository, queue SubmissionQueue) *SubmissionService {
 	return &SubmissionService{
 		storage:  storage,
 		taskRepo: taskRepo,
+		queue:    queue,
 	}
 }
 
@@ -41,6 +47,16 @@ func (s *SubmissionService) CreateSubmission(ctx context.Context, req *domain.Cr
 
 	str, err := s.storage.SaveSubmission(ctx, req)
 	if err != nil {
+		return "", err
+	}
+
+	event := domain.SubmissionEvent{
+		SubmissionID: str,
+		TaskID:       req.TaskID,
+		UserID:       req.UserID,
+	}
+
+	if err = s.queue.Publish(ctx, event); err != nil {
 		return "", err
 	}
 

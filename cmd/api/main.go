@@ -13,6 +13,7 @@ import (
 
 	"codepulse/internal/config"
 	"codepulse/internal/handler"
+	"codepulse/internal/queue/kafka"
 	"codepulse/internal/service"
 	"codepulse/internal/storage"
 
@@ -53,12 +54,24 @@ func run() error {
 		return fmt.Errorf("database migration error: %w", err)
 	}
 
+	if err := kafka.EnsureTopic(cfg.KafkaBrokers, cfg.KafkaTopicSubmissions, 4); err != nil {
+		return fmt.Errorf("failed to ensure kafka topic: %w", err)
+	}
+	slog.Info("Kafka topic ready", "topic", cfg.KafkaTopicSubmissions)
+
+	kafkaProducer := kafka.NewProducer(cfg.KafkaBrokers, cfg.KafkaTopicSubmissions)
+	defer func() {
+		if err := kafkaProducer.Close(); err != nil {
+			slog.Error("error closing Kafka producer", "error", err)
+		}
+	}()
+
 	taskStorage := storage.NewTaskStorage(db)
 	taskService := service.NewTaskService(taskStorage)
 	taskHandler := handler.NewTaskHandler(taskService)
 
 	subStorage := storage.NewSubmissionStorage(db)
-	subService := service.NewSubmissionService(subStorage, taskStorage)
+	subService := service.NewSubmissionService(subStorage, taskStorage, kafkaProducer)
 	subHandler := handler.NewSubmissionHandler(subService)
 
 	mux := http.NewServeMux()

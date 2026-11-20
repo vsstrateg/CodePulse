@@ -48,6 +48,7 @@ func (h *SubmissionHandler) CreateSubmission(w http.ResponseWriter, r *http.Requ
 			sendError(w, http.StatusNotFound, "task not found")
 			return
 		}
+		slog.Error("failed to create submission", "error", err)
 		sendError(w, http.StatusInternalServerError, "internal server error")
 		return
 
