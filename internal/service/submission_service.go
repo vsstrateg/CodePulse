@@ -10,6 +10,7 @@ import (
 type SubmissionRepository interface {
 	SaveSubmission(ctx context.Context, req *domain.CreateSubmissionRequest) (string, error)
 	FindSubmissionByID(ctx context.Context, id string) (*domain.Submission, error)
+	FindSubmissionsByUserID(ctx context.Context, userID string) ([]domain.Submission, error)
 }
 
 type SubmissionQueue interface {
@@ -70,4 +71,17 @@ func (s *SubmissionService) GetSubmissionByID(ctx context.Context, id string) (*
 	}
 
 	return sub, nil
+}
+
+func (s *SubmissionService) GetSubmissionsByUserID(ctx context.Context, userID string) ([]domain.Submission, error) {
+	if _, err := uuid.Parse(userID); err != nil {
+		return nil, domain.ErrInvalidUserID
+	}
+
+	submissions, err := s.storage.FindSubmissionsByUserID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	return submissions, nil
 }

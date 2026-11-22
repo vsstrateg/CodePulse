@@ -83,6 +83,8 @@ func run() error {
 	mux.HandleFunc("POST /api/v1/submissions", subHandler.CreateSubmission)
 	mux.HandleFunc("GET /api/v1/submissions/{id}", subHandler.GetSubmissionByID)
 
+	mux.HandleFunc("GET /api/v1/users/{user_id}/submissions", subHandler.GetUserSubmissions)
+
 	srv := &http.Server{
 		Addr:    cfg.Port,
 		Handler: mux,

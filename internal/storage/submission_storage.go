@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"log/slog"
 )
 
 type SubmissionStorage struct {
@@ -66,4 +67,32 @@ func (s *SubmissionStorage) UpdateResult(ctx context.Context, id string, res dom
 	}
 
 	return nil
+}
+
+func (s *SubmissionStorage) FindSubmissionsByUserID(ctx context.Context, userID string) ([]domain.Submission, error) {
+	query := `SELECT id, task_id, user_id, source_code, status, execution_time_ms, error_message, created_at, updated_at FROM submissions WHERE user_id = $1 ORDER BY created_at DESC`
+	rows, err := s.db.QueryContext(ctx, query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if err := rows.Close(); err != nil {
+			slog.Error("failed to close submissions rows", "error", err)
+		}
+	}()
+
+	var submissions []domain.Submission
+	for rows.Next() {
+		var submission domain.Submission
+		if err := rows.Scan(&submission.ID, &submission.TaskID, &submission.UserID, &submission.SourceCode, &submission.Status, &submission.ExecutionTime, &submission.ErrorMessage, &submission.CreatedAt, &submission.UpdatedAt); err != nil {
+			return nil, err
+		}
+		submissions = append(submissions, submission)
+
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return submissions, nil
 }

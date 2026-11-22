@@ -13,6 +13,7 @@ import (
 type SubmissionService interface {
 	CreateSubmission(ctx context.Context, req *domain.CreateSubmissionRequest) (string, error)
 	GetSubmissionByID(ctx context.Context, id string) (*domain.Submission, error)
+	GetSubmissionsByUserID(ctx context.Context, userID string) ([]domain.Submission, error)
 }
 
 type SubmissionHandler struct {
@@ -93,4 +94,31 @@ func (h *SubmissionHandler) GetSubmissionByID(w http.ResponseWriter, r *http.Req
 		return
 	}
 
+}
+
+func (h *SubmissionHandler) GetUserSubmissions(w http.ResponseWriter, r *http.Request) {
+	userID := r.PathValue("user_id")
+
+	if _, err := uuid.Parse(userID); err != nil {
+		sendError(w, http.StatusBadRequest, "invalid user id")
+		return
+	}
+
+	submissions, err := h.service.GetSubmissionsByUserID(r.Context(), userID)
+	if err != nil {
+		slog.Error("failed to get user submissions", "error", err)
+		sendError(w, http.StatusInternalServerError, "internal server error")
+		return
+	}
+
+	if submissions == nil {
+		submissions = []domain.Submission{}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(submissions); err != nil {
+		slog.Warn("the client terminated the connection", "error", err)
+		return
+	}
 }
