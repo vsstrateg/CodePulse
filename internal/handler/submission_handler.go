@@ -36,8 +36,8 @@ func (h *SubmissionHandler) CreateSubmission(w http.ResponseWriter, r *http.Requ
 			sendError(w, http.StatusBadRequest, "code limit conditions not met")
 			return
 		}
-		if errors.Is(err, domain.ErrUserIDLen) {
-			sendError(w, http.StatusBadRequest, "user ID is too short")
+		if errors.Is(err, domain.ErrInvalidUserID) {
+			sendError(w, http.StatusBadRequest, "user ID is invalid")
 			return
 		}
 		if errors.Is(err, domain.ErrInvalidTaskID) {

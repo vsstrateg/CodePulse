@@ -17,7 +17,7 @@ func NewProducer(broker string, topic string) *Producer {
 	w := &kafka.Writer{
 		Addr:     kafka.TCP(broker),
 		Topic:    topic,
-		Balancer: &kafka.LeastBytes{},
+		Balancer: &kafka.Hash{},
 	}
 	return &Producer{writer: w}
 }

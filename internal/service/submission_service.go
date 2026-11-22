@@ -4,6 +4,7 @@ import (
 	"codepulse/internal/domain"
 	"context"
 	"strings"
+	"uuid"
 )
 
 type SubmissionRepository interface {
@@ -34,8 +35,8 @@ func (s *SubmissionService) CreateSubmission(ctx context.Context, req *domain.Cr
 	if len(sourceCode) < 1 || len(req.SourceCode) > 64*1024 {
 		return "", domain.ErrCodeLimit
 	}
-	if len(req.UserID) < 1 {
-		return "", domain.ErrUserIDLen
+	if _, err := uuid.Parse(req.UserID); err != nil {
+		return "", domain.ErrInvalidUserID
 	}
 	if req.TaskID < 1 {
 		return "", domain.ErrInvalidTaskID

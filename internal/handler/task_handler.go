@@ -34,6 +34,7 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 
 	task, err := h.service.CreateTask(r.Context(), &req)
 	if err != nil {
+		slog.Error("failed to create task", "error", err)
 		sendError(w, http.StatusInternalServerError, "internal server error")
 		return
 	}

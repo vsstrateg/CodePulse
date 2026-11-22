@@ -7,16 +7,6 @@ import (
 	"time"
 )
 
-// UserStorage serves as a repository for user information
-type UserStorage struct {
-	db *sql.DB
-}
-
-// NewUserStorage creates a new instance of UserStorage
-func NewUserStorage(db *sql.DB) *UserStorage {
-	return &UserStorage{db: db}
-}
-
 // NewPostgresDB creates a connection to the PostgreSQL database
 func NewPostgresDB(ctx context.Context, dsn string) (*sql.DB, error) {
 	db, err := sql.Open("pgx", dsn)

@@ -45,3 +45,25 @@ func (s *SubmissionStorage) FindSubmissionByID(ctx context.Context, id string) (
 
 	return &submission, nil
 }
+
+func (s *SubmissionStorage) UpdateStatus(ctx context.Context, id string, status domain.SubmissionStatus) error {
+	query := `UPDATE submissions SET status = $1, updated_at = NOW() WHERE id = $2`
+
+	_, err := s.db.ExecContext(ctx, query, status, id)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *SubmissionStorage) UpdateResult(ctx context.Context, id string, res domain.ExecutionResult) error {
+	query := `UPDATE submissions SET status = $1, execution_time_ms = $2, error_message = $3, updated_at = NOW() WHERE id = $4`
+
+	_, err := s.db.ExecContext(ctx, query, res.Verdict, res.ExecutionTime, res.ErrorMessage, id)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

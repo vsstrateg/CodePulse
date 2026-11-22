@@ -132,3 +132,33 @@ func (s *TaskStorage) FindTaskByID(ctx context.Context, id int) (*domain.TaskDet
 		Tests: testsArr,
 	}, nil
 }
+
+func (s *TaskStorage) FindAllTestsByTaskID(ctx context.Context, taskID int) ([]domain.Test, error) {
+	query := `SELECT id, task_id, input_data, expected_output, is_sample FROM task_tests WHERE task_id = $1 ORDER BY id`
+
+	rows, err := s.db.QueryContext(ctx, query, taskID)
+	if err != nil {
+		return nil, err
+	}
+
+	defer func() {
+		err := rows.Close()
+		if err != nil {
+			slog.Error("failed to close tests rows", "error", err)
+		}
+	}()
+
+	var tests []domain.Test
+	for rows.Next() {
+		var t domain.Test
+		if err := rows.Scan(&t.ID, &t.TaskID, &t.Input, &t.ExpectedOutput, &t.IsSample); err != nil {
+			return nil, err
+		}
+		tests = append(tests, t)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return tests, nil
+}
