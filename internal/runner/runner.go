@@ -101,7 +101,7 @@ func (r *DockerRunner) Run(ctx context.Context, sourceCode string, tests []domai
 
 func (r *DockerRunner) compile(ctx context.Context, dir string) (string, error) {
 	cfg := container.Config{
-		Image: "golang:1.26-alpine",
+		Image: "golang:1.27-alpine",
 		Cmd:   []string{"go", "build", "-o", "/sandbox/solution", "/sandbox/main.go"},
 	}
 
@@ -163,7 +163,7 @@ func (r *DockerRunner) runTest(ctx context.Context, dir string, test domain.Test
 	}
 
 	cfg := container.Config{
-		Image: "golang:1.26-alpine",
+		Image: "golang:1.27-alpine",
 		Cmd:   []string{"sh", "-c", "/sandbox/solution < /sandbox/input.txt"},
 	}
 
