@@ -78,14 +78,17 @@ func run() error {
 	}()
 
 	taskStorage := storage.NewTaskStorage(db)
+	subStorage := storage.NewSubmissionStorage(db)
 	rateStorage := storage.NewRedisRateLimiter(rdb)
+	leaderboardStorage := storage.NewLeaderboardStorage(rdb)
 
 	taskService := service.NewTaskService(taskStorage)
-	taskHandler := handler.NewTaskHandler(taskService)
-
-	subStorage := storage.NewSubmissionStorage(db)
 	subService := service.NewSubmissionService(subStorage, taskStorage, kafkaProducer, rateStorage)
+	leaderboardService := service.NewLeaderboardService(leaderboardStorage)
+
+	taskHandler := handler.NewTaskHandler(taskService)
 	subHandler := handler.NewSubmissionHandler(subService)
+	leaderboardHandler := handler.NewLeaderboardHandler(leaderboardService)
 
 	mux := http.NewServeMux()
 
@@ -95,8 +98,9 @@ func run() error {
 
 	mux.HandleFunc("POST /api/v1/submissions", subHandler.CreateSubmission)
 	mux.HandleFunc("GET /api/v1/submissions/{id}", subHandler.GetSubmissionByID)
-
 	mux.HandleFunc("GET /api/v1/users/{user_id}/submissions", subHandler.GetUserSubmissions)
+
+	mux.HandleFunc("GET /api/v1/leaderboard", leaderboardHandler.GetLeaderboard)
 
 	srv := &http.Server{
 		Addr:    cfg.Port,

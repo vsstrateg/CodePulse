@@ -31,3 +31,8 @@ type SubmissionEvent struct {
 	TaskID       int    `json:"task_id"`
 	UserID       string `json:"user_id"`
 }
+
+type LeaderboardEntry struct {
+	UserID string `json:"user_id"`
+	Score  int    `json:"score"`
+}

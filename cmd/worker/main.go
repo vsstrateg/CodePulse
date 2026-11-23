@@ -47,8 +47,22 @@ func run() error {
 		}
 	}()
 
+	// REDIS
+	rdb, err := storage.NewRedisClient(initCtx, cfg.RedisAddr)
+	if err != nil {
+		return fmt.Errorf("redis initialization error: %w", err)
+	}
+	slog.Info("Redis initialized")
+	defer func() {
+		if err := rdb.Close(); err != nil {
+			slog.Error("error closing redis", "error", err)
+		}
+	}()
+
 	taskStorage := storage.NewTaskStorage(db)
 	subStorage := storage.NewSubmissionStorage(db)
+
+	leaderboardStorage := storage.NewLeaderboardStorage(rdb)
 
 	dockerRunner, err := runner.NewDockerRunner()
 	if err != nil {
@@ -67,7 +81,7 @@ func run() error {
 		}
 	}()
 
-	proc := worker.NewProcessor(taskStorage, subStorage, dockerRunner)
+	proc := worker.NewProcessor(taskStorage, subStorage, dockerRunner, leaderboardStorage)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()

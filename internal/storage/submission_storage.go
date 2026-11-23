@@ -96,3 +96,13 @@ func (s *SubmissionStorage) FindSubmissionsByUserID(ctx context.Context, userID 
 
 	return submissions, nil
 }
+
+func (s *SubmissionStorage) HasUserSolvedTask(ctx context.Context, userID string, taskID int) (bool, error) {
+	var exists bool
+	query := `SELECT EXISTS(SELECT 1 FROM submissions WHERE user_id = $1 AND task_id = $2 AND status = 'ACCEPTED')`
+
+	if err := s.db.QueryRowContext(ctx, query, userID, taskID).Scan(&exists); err != nil {
+		return false, err
+	}
+	return exists, nil
+}

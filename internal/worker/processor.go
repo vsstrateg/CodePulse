@@ -11,17 +11,24 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
+type LeaderboardRepository interface {
+	IncrementScore(ctx context.Context, userID string, points int) error
+}
+
 type Processor struct {
 	taskStorage *storage.TaskStorage
 	subStorage  *storage.SubmissionStorage
 	runner      *runner.DockerRunner
+	leaderboard LeaderboardRepository
 }
 
-func NewProcessor(taskStorage *storage.TaskStorage, subStorage *storage.SubmissionStorage, runner *runner.DockerRunner) *Processor {
+func NewProcessor(taskStorage *storage.TaskStorage, subStorage *storage.SubmissionStorage, runner *runner.DockerRunner, leaderboard LeaderboardRepository) *Processor {
 	return &Processor{
 		taskStorage: taskStorage,
 		subStorage:  subStorage,
-		runner:      runner}
+		runner:      runner,
+		leaderboard: leaderboard,
+	}
 }
 
 func (p *Processor) Process(ctx context.Context, msg kafka.Message) error {
@@ -29,6 +36,11 @@ func (p *Processor) Process(ctx context.Context, msg kafka.Message) error {
 
 	if err := json.Unmarshal(msg.Value, &event); err != nil {
 		return err
+	}
+
+	alreadySolved, err := p.subStorage.HasUserSolvedTask(ctx, event.UserID, event.TaskID)
+	if err != nil {
+		slog.Error("failed to check if task already solved", "error", err)
 	}
 
 	if err := p.subStorage.UpdateStatus(ctx, event.SubmissionID, domain.StatusRunning); err != nil {
@@ -52,6 +64,14 @@ func (p *Processor) Process(ctx context.Context, msg kafka.Message) error {
 	res, err := p.runner.Run(ctx, sub.SourceCode, tests, task.TimeLimitMs, task.MemoryLimitMb)
 	if err != nil {
 		return err
+	}
+
+	if res.Verdict == domain.StatusAccepted && !alreadySolved {
+		if err := p.leaderboard.IncrementScore(ctx, event.UserID, task.Points); err != nil {
+			slog.Error("failed to update leaderboard", "user_id", event.UserID, "error", err)
+		} else {
+			slog.Info("leaderboard updated", "user_id", event.UserID, "points", task.Points)
+		}
 	}
 
 	if err := p.subStorage.UpdateResult(ctx, event.SubmissionID, *res); err != nil {
