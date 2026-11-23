@@ -36,3 +36,8 @@ type LeaderboardEntry struct {
 	UserID string `json:"user_id"`
 	Score  int    `json:"score"`
 }
+
+type KubernetesStatus struct {
+	Status       string            `json:"status"`
+	Verification map[string]string `json:"verification"`
+}

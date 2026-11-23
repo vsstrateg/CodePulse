@@ -22,7 +22,7 @@ import (
 )
 
 func main() {
-	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	slog.SetDefault(logger)
 
 	if err := run(); err != nil {
@@ -89,8 +89,10 @@ func run() error {
 	taskHandler := handler.NewTaskHandler(taskService)
 	subHandler := handler.NewSubmissionHandler(subService)
 	leaderboardHandler := handler.NewLeaderboardHandler(leaderboardService)
+	healthHandler := handler.NewHealthHandler(db, rdb, cfg.KafkaBrokers)
 
 	mux := http.NewServeMux()
+	healthMux := http.NewServeMux()
 
 	mux.HandleFunc("POST /api/v1/tasks", taskHandler.CreateTask)
 	mux.HandleFunc("GET /api/v1/tasks", taskHandler.GetTasks)
@@ -102,9 +104,17 @@ func run() error {
 
 	mux.HandleFunc("GET /api/v1/leaderboard", leaderboardHandler.GetLeaderboard)
 
+	healthMux.HandleFunc("GET /healthz", healthHandler.Liveness)
+	healthMux.HandleFunc("GET /ready", healthHandler.Readiness)
+
 	srv := &http.Server{
 		Addr:    cfg.Port,
 		Handler: mux,
+	}
+
+	healthSrv := &http.Server{
+		Addr:    cfg.HealthPort,
+		Handler: healthMux,
 	}
 
 	go func() {
@@ -113,6 +123,13 @@ func run() error {
 		}
 	}()
 	slog.Info("Server started", "port", cfg.Port)
+
+	go func() {
+		if err := healthSrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			slog.Error("Health server error", "error", err)
+		}
+	}()
+	slog.Info("Health server started", "port", cfg.HealthPort)
 
 	stopCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -127,6 +144,11 @@ func run() error {
 		slog.Error("Error while forcibly stopping the server", "error", err)
 	}
 	slog.Info("The server has been shut down successfully and gracefully")
+
+	if err := healthSrv.Shutdown(shutdownCtx); err != nil {
+		slog.Error("Error while stopping the health server", "error", err)
+	}
+	slog.Info("The Health server has been shut down successfully and gracefully")
 
 	return nil
 }
