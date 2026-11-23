@@ -59,6 +59,11 @@ services:
     container_name: codepulse_redis
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 2s
+      retries: 5
     volumes:
       - codepulse_redis:/data
   api:
@@ -73,10 +78,13 @@ services:
       DB_DSN: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable"
       KAFKA_BROKERS: "kafka:29092"
       KAFKA_TOPIC_SUBMISSIONS: "submissions.pending"
+      REDIS_ADDR: "redis:6379"
     depends_on:
       postgres:
         condition: service_healthy
       kafka:
+        condition: service_healthy
+      redis:
         condition: service_healthy
   worker:
     build:

@@ -12,6 +12,7 @@ type Config struct {
 	DBDSN                 string
 	KafkaBrokers          string
 	KafkaTopicSubmissions string
+	RedisAddr             string
 }
 
 // LoadConfig loads configuration from environment variables or .env file
@@ -24,6 +25,7 @@ func LoadConfig() *Config {
 		DBDSN:                 getEnv("DB_DSN", ""),
 		KafkaBrokers:          getEnv("KAFKA_BROKERS", "localhost:9092"),
 		KafkaTopicSubmissions: getEnv("KAFKA_TOPIC_SUBMISSIONS", "submissions.pending"),
+		RedisAddr:             getEnv("REDIS_ADDR", "localhost:6379"),
 	}
 }
 

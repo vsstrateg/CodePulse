@@ -49,6 +49,17 @@ func run() error {
 			slog.Error("error closing DB", "error", err)
 		}
 	}()
+	// REDIS
+	rdb, err := storage.NewRedisClient(initCtx, cfg.RedisAddr)
+	if err != nil {
+		return fmt.Errorf("redis initialization error: %w", err)
+	}
+	slog.Info("Redis initialized")
+	defer func() {
+		if err := rdb.Close(); err != nil {
+			slog.Error("error closing redis", "error", err)
+		}
+	}()
 
 	if err := storage.RunMigrations(db); err != nil {
 		return fmt.Errorf("database migration error: %w", err)
@@ -67,11 +78,13 @@ func run() error {
 	}()
 
 	taskStorage := storage.NewTaskStorage(db)
+	rateStorage := storage.NewRedisRateLimiter(rdb)
+
 	taskService := service.NewTaskService(taskStorage)
 	taskHandler := handler.NewTaskHandler(taskService)
 
 	subStorage := storage.NewSubmissionStorage(db)
-	subService := service.NewSubmissionService(subStorage, taskStorage, kafkaProducer)
+	subService := service.NewSubmissionService(subStorage, taskStorage, kafkaProducer, rateStorage)
 	subHandler := handler.NewSubmissionHandler(subService)
 
 	mux := http.NewServeMux()

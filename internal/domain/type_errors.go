@@ -7,3 +7,5 @@ var ErrCodeLimit = errors.New("code limit conditions not met")
 var ErrInvalidUserID = errors.New("invalid user id")
 var ErrInvalidTaskID = errors.New("invalid task id")
 var ErrSubmissionNotFound = errors.New("submission not found")
+
+var ErrRateLimitExceeded = errors.New("rate limit exceeded, please try again later")

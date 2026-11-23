@@ -4,6 +4,7 @@ import (
 	"codepulse/internal/domain"
 	"context"
 	"strings"
+	"time"
 	"uuid"
 )
 
@@ -17,17 +18,23 @@ type SubmissionQueue interface {
 	Publish(ctx context.Context, event domain.SubmissionEvent) error
 }
 
+type RateLimiter interface {
+	Allow(ctx context.Context, key string, limit int64, window time.Duration) (bool, error)
+}
+
 type SubmissionService struct {
 	storage  SubmissionRepository
 	taskRepo TaskRepository
 	queue    SubmissionQueue
+	limiter  RateLimiter
 }
 
-func NewSubmissionService(storage SubmissionRepository, taskRepo TaskRepository, queue SubmissionQueue) *SubmissionService {
+func NewSubmissionService(storage SubmissionRepository, taskRepo TaskRepository, queue SubmissionQueue, limiter RateLimiter) *SubmissionService {
 	return &SubmissionService{
 		storage:  storage,
 		taskRepo: taskRepo,
 		queue:    queue,
+		limiter:  limiter,
 	}
 }
 
@@ -41,6 +48,14 @@ func (s *SubmissionService) CreateSubmission(ctx context.Context, req *domain.Cr
 	}
 	if req.TaskID < 1 {
 		return "", domain.ErrInvalidTaskID
+	}
+
+	allowed, err := s.limiter.Allow(ctx, "ratelimit:submissions:"+req.UserID, 5, 1*time.Minute)
+	if err != nil {
+		return "", err
+	}
+	if !allowed {
+		return "", domain.ErrRateLimitExceeded
 	}
 
 	if _, err := s.taskRepo.FindTaskByID(ctx, req.TaskID); err != nil {

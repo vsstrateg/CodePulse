@@ -33,6 +33,10 @@ func (h *SubmissionHandler) CreateSubmission(w http.ResponseWriter, r *http.Requ
 
 	submissionUUID, err := h.service.CreateSubmission(r.Context(), &req)
 	if err != nil {
+		if errors.Is(err, domain.ErrRateLimitExceeded) {
+			sendError(w, http.StatusTooManyRequests, "rate limit exceeded, please try again later")
+			return
+		}
 		if errors.Is(err, domain.ErrCodeLimit) {
 			sendError(w, http.StatusBadRequest, "code limit conditions not met")
 			return
